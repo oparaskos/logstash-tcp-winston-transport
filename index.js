@@ -26,12 +26,12 @@ module.exports = class LogstashTCP extends Transport {
         });
         self._socket.setDefaultEncoding("utf8");
         self.connect();
-        // Clean up if the process stops.
-        process.on('beforeExit', () => self.close());
     }
 
     log(info, callback) {
         const self = this;
+        callback = callback || (() => {});
+
         setImmediate(() => {
             self.emit('logged', info);
         });

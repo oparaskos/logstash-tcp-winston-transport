@@ -16,7 +16,7 @@ function createTestServer(opts) {
     close: () => server && server.close(),
     recievedAtLeast,
     recievedExactlyOnce,
-    recievedAtExactlyNTimes,
+    recievedExactlyNTimes,
     connectedAtLeast,
     connectedExactlyOnce,
     connectedExactlyNTimes,
@@ -45,8 +45,8 @@ function createTestServer(opts) {
   };
 
   function recievedAtLeast(n, matcher) {
-    const matching = recieved.filter(v => matcher && matcher(v) || true);
-    expect(matching.length).to.gte(n);
+    const matching = splitLines(recieved).filter(matches(matcher));
+    expect(matching.length, "number of matching messages").to.gte(n);
     return testServer;
   }
 
@@ -54,14 +54,14 @@ function createTestServer(opts) {
     return recievedAtExactlyNTimes(1, matcher);
   }
 
-  function recievedAtExactlyNTimes(n, matcher) {
-    const matching = recieved.filter(v => matcher && matcher(v) || true);
-    expect(matching.length).to.equal(n);
+  function recievedExactlyNTimes(n, matcher) {
+    const matching = splitLines(recieved).filter(matches(matcher));
+    expect(matching.length, "number of matching messages").to.equal(n);
     return testServer;
   }
 
   function connectedAtLeast(n) {
-    expect(connections).to.gte(n);
+    expect(connections, "number of connections").to.gte(n);
     return testServer;
   }
 
@@ -70,12 +70,12 @@ function createTestServer(opts) {
   }
 
   function connectedExactlyNTimes(n) {
-    expect(connections).to.equal(n);
+    expect(connections, "number of connections").to.equal(n);
     return testServer;
   }
 
   function closedAtLeast(n) {
-    expect(closed).to.gte(n);
+    expect(closed, "number of times closed").to.gte(n);
     return testServer;
   }
 
@@ -84,13 +84,13 @@ function createTestServer(opts) {
   }
 
   function closedExactlyNTimes(n) {
-    expect(closed).to.equal(n);
+    expect(closed, "number of times closed").to.equal(n);
     return testServer;
   }
 
   function erroredAtLeast(n, matcher) {
-    const matching = errors.filter(v => matcher && matcher(v) || true);
-    expect(matching.length).to.gte(n);
+    const matching = errors.filter(matches(matcher));
+    expect(matching.length, "number of matching errors").to.gte(n);
     return testServer;
   }
 
@@ -99,12 +99,29 @@ function createTestServer(opts) {
   }
 
   function erroredExactlyNTimes(n, matcher) {
-    const matching = errors.filter(v => matcher && matcher(v) || true);
-    expect(matching.length).to.equal(n);
+    const matching = errors.filter(matches(matcher));
+    expect(matching.length, "number of matching errors").to.equal(n);
     return testServer;
   }
 
   return testServer;
+}
+
+function splitLines(recieved) {
+  return recieved
+    .map((v) => v.toString().split('\n'))
+    .flat()
+    .filter(v => !!v);
+}
+
+function matches(matcher) {
+  return (a) => {
+    if (!matcher) {
+      return true;
+    } else {
+      return matcher(a);
+    }
+  }
 }
 
 module.exports = { createTestServer };

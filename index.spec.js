@@ -2,7 +2,6 @@ const { describe, it } = require('mocha');
 const { expect } = require('chai');
 const LogstashTCP = require('./index');
 const { createTestServer } = require('./test/tcp-server');
-const sinon = require('sinon');
 
 describe('LogstashTCP', () => {
   let testServer;
@@ -15,7 +14,8 @@ describe('LogstashTCP', () => {
       host: "localhost",
       retryInterval: 20,
       maxRetries: 3,
-      connectTimeout: 10 });
+      connectTimeout: 10
+    });
   });
   afterEach(() => {
     testServer.close();
@@ -43,9 +43,33 @@ describe('LogstashTCP', () => {
       }, 10);
     });
   });
-  it('should retry failed sends');
-  it('should queue messages while the socket is disconnected');
-  it('should flush message queue when socket becomes ready');
+  it('should queue messages while the socket is disconnected', (done) => {
+    // Close the server
+    const port = testServer.address().port;
+    testServer.close();
+    setTimeout(() => {
+      expect(logstashTCP._connected, "should be disconnected").to.be.false;
+      expect(logstashTCP._retrying, "should be attempting to reconnect").to.be.true;
+      const logStatements = [
+        logAsPromise(logstashTCP, "This"),
+        logAsPromise(logstashTCP, "Is"),
+        logAsPromise(logstashTCP, "A"),
+        logAsPromise(logstashTCP, "Message"),
+      ]
+      expect(logstashTCP._logQueue.length).to.equal(4);
+      // Restart the server
+      testServer = createTestServer({ port });
+      setTimeout(() => {
+        expect(logstashTCP._connected, "should be re-connected").to.be.true;
+        Promise.all(logStatements)
+          .then(() => {
+            testServer.recievedExactlyNTimes(4);
+          });
+        done();
+      }, logstashTCP._retryInterval + logstashTCP._connectTimeout + 10);
+
+    }, 5);
+  });
   it('should re-establish a failed socket', (done) => {
     // Close the server
     const port = testServer.address().port;
@@ -54,30 +78,24 @@ describe('LogstashTCP', () => {
       expect(logstashTCP._connected, "should be disconnected").to.be.false;
       expect(logstashTCP._retrying, "should be attempting to reconnect").to.be.true;
       // Restart the server
-      testServer = createTestServer({port});
+      testServer = createTestServer({ port });
       setTimeout(() => {
-          expect(logstashTCP._connected, "should be re-connected").to.be.true;
-          testServer.connectedExactlyOnce();
-          done();
-      }, logstashTCP._retryInterval + logstashTCP._connectTimeout + 10)
-    }, 5)
-  });
-  describe('Graceful Exit', () => {
-    let closeStub;
-    let sandbox;
-    before(() => {
-      sandbox = sinon.createSandbox();
-      closeStub = sandbox.stub(logstashTCP, 'close');
-    })
-    after(() => {
-      sandbox.restore();
-    })
-    it('should close the port when the program is terminated', (done) => {
-      process.once('beforeExit', () => {
-        sinon.assert.calledOnce(closeStub);
+        expect(logstashTCP._connected, "should be re-connected").to.be.true;
+        testServer.connectedExactlyOnce();
         done();
-      });
-      process.emit('beforeExit');
-    });
+      }, logstashTCP._retryInterval + logstashTCP._connectTimeout + 10);
+    }, 5);
   });
 });
+
+function logAsPromise(logstash, message) {
+  return new Promise((resolve, reject) => {
+    logstash.log(message, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    })
+  })
+}
