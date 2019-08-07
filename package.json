@@ -1,12 +1,11 @@
 {
-  "name": "logstash-tcp-wins",
-  "version": "1.0.15",
+  "name": "logstash-tcp-winston-transport",
+  "version": "1.1.0",
   "description": "A TCP Logstash tranport for Winston",
   "main": "./index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test mocha *.spec.js lib/**/*.spec.js"
   },
-  "author": "Ross Coundon",
   "license": "ISC",
   "dependencies": {
     "winston": "^3.2.1",
@@ -15,17 +14,12 @@
   "directories": {
     "lib": "lib"
   },
-  "devDependencies": {},
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rcoundon/logstash-wins.git"
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0"
   },
   "keywords": [
     "Logstash",
     "Winston"
-  ],
-  "bugs": {
-    "url": "https://github.com/Leadent/logstash-wins/issues"
-  },
-  "homepage": "https://github.com/Leadent/logstash-wins#readme"
+  ]
 }
