@@ -1,6 +1,6 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const LogstashTCP = require('./index');
+const { LogstashTCP } = require('.');
 const { createTestServer } = require('./test/tcp-server');
 
 describe('LogstashTCP', () => {
@@ -14,7 +14,8 @@ describe('LogstashTCP', () => {
       host: "localhost",
       retryInterval: 20,
       maxRetries: 3,
-      connectTimeout: 10
+      connectTimeout: 10,
+      // verboseConnectionLogging: true
     });
   });
   afterEach(() => {

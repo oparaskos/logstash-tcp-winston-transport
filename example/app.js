@@ -1,7 +1,7 @@
 const { createLogger, format } = require('winston');
 const { combine, timestamp, label, prettyPrint, json } = format;
 
-const logstashTcpWins = require('..');
+const { LogstashTCP, flushAndClose } = require('..');
 
 const logger = createLogger({
     format: combine(
@@ -11,7 +11,7 @@ const logger = createLogger({
         json()
     ),
     transports: [
-        new logstashTcpWins({
+        new LogstashTCP({
             level: "debug",
             port: 5000,
             json: true,
@@ -36,4 +36,11 @@ let interval = setInterval(() => {
         interval = null;
         process.exit(0);
     }
-}, 100)
+}, 100);
+
+// Gracefully wait for the log messages to finish getting to logstash before exit.
+flushAndClose()
+    .catch((err) => {
+        console.error(err);
+        process.exit(1)
+    });
